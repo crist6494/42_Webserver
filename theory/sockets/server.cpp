@@ -1,12 +1,12 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   server.c++                                         :+:      :+:    :+:   */
+/*   server.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: cmorales <moralesrojascr@gmail.com>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/01/24 11:39:16 by cmorales          #+#    #+#             */
-/*   Updated: 2024/01/30 00:30:12 by cmorales         ###   ########.fr       */
+/*   Updated: 2024/02/06 11:39:09 by cmorales         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,7 +16,9 @@
 #include <string.h>
 #include <netinet/in.h>
 #include <string.h>
+#include <arpa/inet.h>
 #include <unistd.h>
+#include <iostream>
 #include <stdlib.h>
 
 /*
@@ -60,6 +62,7 @@ int main()
     //2° Identify (name) socket ==> int bind(int socket, const struct sockaddr *address, sockerlen_t adress_len)
     const int port = 8080;
     struct sockaddr_in address;
+    int addrlen = sizeof(address);
     
     memset((char *)&address, 0, sizeof(address));
     address.sin_family = AF_INET;
@@ -76,13 +79,13 @@ int main()
 
     //3° On the server, wait for an incoming connection => server should have a socket that is prepared to accept the connections
     //Socket mode listen, more than 10 conection = conection refused and send an error
-    if(listen(server_socket_fd, 10) < 0)
+    if(listen(server_socket_fd, 100) < 0)
      {
         perror("In listen");
         return(1);
     }
     int new_socket;
-    int addrlen = sizeof(address);
+    char ip_server[INET_ADDRSTRLEN];
     //If accept is successful return a new socket with the conection accepted
     while(1)
     {
@@ -92,6 +95,8 @@ int main()
             perror("In accept");
             return (1);
         }
+        inet_ntop(AF_INET,&address.sin_addr, ip_server, INET_ADDRSTRLEN);
+        std::cout << "IP: " << ip_server << std::endl;
         /*The original socket that was set up for listening is used only for accepting connections, not for exchanging data. 
         By default, socket operations are synchronous, or blocking, 
         and accept will block until a connection is present on the queue.*/
