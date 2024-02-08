@@ -1,12 +1,12 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   server.cpp                                         :+:      :+:    :+:   */
+/*   select_server.cpp                                  :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: cmorales <moralesrojascr@gmail.com>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/01/24 11:39:16 by cmorales          #+#    #+#             */
-/*   Updated: 2024/02/08 20:07:22 by cmorales         ###   ########.fr       */
+/*   Updated: 2024/02/08 19:54:05 by cmorales         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -19,7 +19,6 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 #include <iostream>
-#include <fcntl.h>
 #include <stdlib.h>
 
 /*
@@ -87,35 +86,57 @@ int main()
     }
     int new_socket;
     char ip_server[INET_ADDRSTRLEN];
-    if (fcntl(server_socket_fd, F_SETFL, O_NONBLOCK) < 0) 
-        perror("Error setting socket to non-blocking");
+
+    fd_set read_fd, current_fd;
+    FD_ZERO(&current_fd);
+    FD_SET(server_socket_fd, &current_fd);
     //If accept is successful return a new socket with the conection accepted
     while(1)
     {
         printf("\n+++++++ Waiting for new connection ++++++++\n\n");
-        if((new_socket = accept(server_socket_fd, (struct sockaddr *)&address, (socklen_t*)&addrlen)) < 0)
+
+        read_fd = current_fd;
+        if(select(FD_SETSIZE, &read_fd, NULL, NULL, NULL) < 0)
         {
-            perror("In accept");
-            return (1);
+            perror("Select error");
+            return(1);
         }
-        sleep(10);
-        inet_ntop(AF_INET,&address.sin_addr, ip_server, INET_ADDRSTRLEN);
-        std::cout << "IP: " << ip_server << std::endl;
+
+        for (int i = 0; i < FD_SETSIZE; i++)
+        {
+             if(FD_ISSET(i, &read_fd))
+            {
+                if(i == server_socket_fd)
+                {
+                     if((new_socket = accept(server_socket_fd, (struct sockaddr *)&address, (socklen_t*)&addrlen)) < 0)
+                    {
+                        perror("In accept");
+                        return (1);
+                    }
+                    FD_SET(new_socket, &current_fd);
+                }
+                else
+                {
+                    sleep(5);
+                    char buffer[1024] = {0};
+                    int valread = read(i, buffer, 1024);
+                    if(valread < 0)
+                        printf("No bytes aree there ro read");
+                    const char *hello = "HTTP/1.1 200 OK\nContent-Type: text/plain\nContent-Length: 12\n\nHello world!";
+                    write(i, hello, strlen(hello));
+                    printf("------------------ Server message sent-------------------\n");
+                    //5° Close the socket
+                    close(i);
+                    FD_CLR(i, &current_fd);
+                }
+            }
+        }
         /*The original socket that was set up for listening is used only for accepting connections, not for exchanging data. 
         By default, socket operations are synchronous, or blocking, 
         and accept will block until a connection is present on the queue.*/
 
 
         //4° Send and receive messages
-        char buffer[1024] = {0};
-        int valread = read(new_socket, buffer, 1024);
-        if(valread < 0)
-            printf("No bytes aree there ro read");
-        const char *hello = "HTTP/1.1 200 OK\nContent-Type: text/plain\nContent-Length: 12\n\nHello world!";
-        write(new_socket, hello, strlen(hello));
-        printf("------------------ Server message sent-------------------\n");
-        //5° Close the socket
-        close(new_socket);
     }
     return (0);
 }

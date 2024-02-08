@@ -6,7 +6,7 @@
 /*   By: cmorales <moralesrojascr@gmail.com>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/02/05 19:34:52 by cmorales          #+#    #+#             */
-/*   Updated: 2024/02/06 11:38:44 by cmorales         ###   ########.fr       */
+/*   Updated: 2024/02/08 18:47:51 by cmorales         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -21,8 +21,8 @@
 
 #define SERVER_IP "127.0.0.1"
 #define SERVER_PORT 8080
-#define NUM_REQUESTS 5
-#define NUM_CLIENTS 100
+#define NUM_REQUESTS 10
+#define NUM_CLIENTS 2
 
 
 
@@ -51,7 +51,7 @@ void *client_fuction(void *arg)
     if(connect(fdsocket, (struct sockaddr *)&servaddr, addrlen) < 0 )
         p_error("Error connecting to the server");
     
-    char *hello = "Hello from client";
+    const char *hello = "Hello from client";
     for(int i = 0; i < NUM_REQUESTS; i++)
     {
         char message[256];
